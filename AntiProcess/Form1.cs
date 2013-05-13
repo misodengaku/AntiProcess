@@ -19,7 +19,9 @@ namespace AntiProcess
         private int WM_SYSCOMMAND = 0x112;
         private IntPtr SC_MINIMIZE = (IntPtr)0xF020;
         List<string> names = new List<string>();
-        Hashtable setting;
+        //Hashtable setting;
+        Setting setting = new Setting();
+
         const string filename = "antiprocess.xml";
 
         public Form1()
@@ -30,11 +32,12 @@ namespace AntiProcess
         private void button1_Click(object sender, EventArgs e)
         {
             timer1.Interval = (int)interval.Value;
+            setting.Interval = (int)interval.Value;
             names.Clear();
             foreach (var item in listBox1.Items)
                 names.Add(item.ToString());
-            setting["Interval"] = timer1.Interval;
-            setting["Names"] = names[0];
+            setting.Names = names;
+
             XmlSerialize(filename, setting);
             MessageBox.Show("設定を保存しました", "AntiProcess");
         }
@@ -65,21 +68,20 @@ namespace AntiProcess
                 try
                 {
                     setting = XmlDeserialize(filename);
-                    timer1.Interval = (int)setting["Interval"];
-                    interval.Value = (int)setting["Interval"];
-                    listBox1.Items.Add((string)setting["Names"]);
-                    names.Clear();
-                    foreach (var item in listBox1.Items)
-                        names.Add(item.ToString());
+                    timer1.Interval = setting.Interval;
+                    interval.Value = setting.Interval;
+                    names = setting.Names;
+                    foreach (var item in names)
+                        listBox1.Items.Add(item);
+                    //names.Clear();
 
                 }catch{
-                    setting = new Hashtable();
+
                 }
             }
             else
             {
-                setting = new Hashtable();
-                setting["Interval"] = 100;
+                setting.Interval = 100;
                 XmlSerialize(filename, setting);
             }
         }
@@ -122,89 +124,35 @@ namespace AntiProcess
 
         #endregion
 
-
-        #region XML関連
-        /// <summary>
-        /// DictionaryEntry配列をHashtableに変換する
-        /// </summary>
-        /// <param name="ary">変換するDictionaryEntry配列</param>
-        /// <returns>変換されたHashtable</returns>
-        public static Hashtable ConvertArrayToHashtable(DictionaryEntry[] ary)
+        private void XmlSerialize(string FILENAME, object obj)
         {
-            Hashtable ht = new Hashtable(ary.Length);
-            foreach (DictionaryEntry de in ary)
-            {
-                ht.Add(de.Key, de.Value);
-            }
-            return ht;
-        }
+            System.Xml.Serialization.XmlSerializer serializer = new
+                System.Xml.Serialization.XmlSerializer(typeof(Setting));
 
-
-        /// <summary>
-        /// HashtableをDictionaryEntryの配列に変換する
-        /// </summary>
-        /// <param name="ht">変換するHashtable</param>
-        /// <returns>変換されたDictionaryEntry配列</returns>
-        public static DictionaryEntry[] ConvertHashtableToArray(Hashtable ht)
-        {
-            DictionaryEntry[] entries = new DictionaryEntry[ht.Count];
-            int entryIndex = 0;
-            foreach (DictionaryEntry de in ht)
-            {
-                entries[entryIndex] = de;
-                entryIndex++;
-            }
-            return entries;
-        }
-
-        /// <summary>
-        /// HashtableをXMLファイルに保存する
-        /// </summary>
-        /// <param name="fileName">保存先のファイル名</param>
-        /// <param name="ht">保存するHashtable</param>
-        public static void XmlSerialize(string fileName, Hashtable ht)
-        {
-            //シリアル化できる型に変換
-            DictionaryEntry[] obj = ConvertHashtableToArray(ht);
-
-            //XMLファイルに保存
-            XmlSerializer serializer =
-                new XmlSerializer(typeof(DictionaryEntry[]));
-            FileStream fs = new FileStream(fileName, FileMode.Create);
+            System.IO.FileStream fs = new System.IO.FileStream(FILENAME, System.IO.FileMode.Create);
             serializer.Serialize(fs, obj);
             fs.Close();
         }
-
-        /// <summary>
-        /// シリアル化されたXMLファイルからHashtableを復元する
-        /// </summary>
-        /// <param name="fileName">復元するXMLファイル名</param>
-        /// <returns>復元されたHashtable</returns>
-        public static Hashtable XmlDeserialize(string fileName)
+        private Setting XmlDeserialize(string FILENAME)
         {
-            //XMLファイルから復元
-            FileStream fs = new FileStream(fileName, FileMode.Open);
-            try
-            {
-                XmlSerializer serializer =
-                    new XmlSerializer(typeof(DictionaryEntry[]));
-                DictionaryEntry[] obj = (DictionaryEntry[])serializer.Deserialize(fs);
-                fs.Close();
 
-                //Hashtableに戻す
-                Hashtable ht = ConvertArrayToHashtable(obj);
-                return ht;
-            }
-            catch
-            {
-                throw new Exception("Deserialize error.");
-            }
-            finally
-            {
-                fs.Close();
-            }
+            System.Xml.Serialization.XmlSerializer serializer = new
+                System.Xml.Serialization.XmlSerializer(typeof(Setting));
+
+            System.IO.FileStream fs = new System.IO.FileStream(FILENAME, System.IO.FileMode.Open);
+
+            var obj = (Setting)serializer.Deserialize(fs);
+            fs.Close();
+
+            return obj;
         }
-        #endregion
 
     }
+
+    public class Setting
+    {
+        public int Interval { get; set; }
+        public List<string> Names { get; set; }
+    }
+
 }
