@@ -41,11 +41,18 @@ namespace AntiProcess
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            foreach (var name in names)
+            try
             {
-                System.Diagnostics.Process[] ps = System.Diagnostics.Process.GetProcessesByName(name);
-                foreach (var p in ps)
-                    p.Kill();
+                foreach (var name in names)
+                {
+                    System.Diagnostics.Process[] ps = System.Diagnostics.Process.GetProcessesByName(name);
+                    foreach (var p in ps)
+                        p.Kill();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
             }
         }
 
